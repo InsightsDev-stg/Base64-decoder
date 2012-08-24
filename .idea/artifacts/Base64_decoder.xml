@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="Base64-decoder">
+    <output-path>$PROJECT_DIR$/target/jar/</output-path>
+    <root id="archive" name="Base64-decoder.jar">
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/META-INF/MANIFEST.MF" />
+      </element>
+      <element id="module-output" name="Base64-decoder" />
+    </root>
+  </artifact>
+</component>
