@@ -142,10 +142,12 @@ public class ConsoleDriver {
                 if(!trashDirectory.exists())
                     trashDirectory.mkdir();
 
-                SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
-                File todaysTrash = new File(trashDirectory, dateFormat.format(new Date()));
+                SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy HH-mm-ss");
+                File todaysTrash = new File(trashDirectory, dateFormat.format(new Date()) );
                 if(!todaysTrash.exists())
-                    todaysTrash.mkdir();
+                    if(!todaysTrash.mkdir()) {
+                        log.severe("Couldn't create directory " + todaysTrash);
+                    }
 
                 for(File f: oldFiles){
                     //перемещаем в trash
@@ -160,7 +162,6 @@ public class ConsoleDriver {
 
             while(e.hasMoreElements()){
                 ZipEntry ze = (ZipEntry) e.nextElement();
-                fileName = ze.getName();
 
                 log.info("Unzipping " + ze.getName());
                 FileOutputStream fout = new FileOutputStream(unzippedPath+"/"+ze.getName());
@@ -175,37 +176,42 @@ public class ConsoleDriver {
         }
 
         void zip() throws IOException {
-            if(fileName==null) {
-                log.warning("You should unzip before!");
-                log.warning("You can bypass this, by typing -sfn (setFileName).");
-                return;
-            }
+            File[] files = new File(unzippedPath).listFiles();
+            File zipFile = new File(zipToEncode);
+            if(zipFile.exists())
+                if(!zipFile.delete())
+                    log.severe("Couldn't delete " + zipFile + ". We all are going die!");
+            zipFile.createNewFile();
 
-            FileOutputStream fout = null;
-            ZipOutputStream zout = null;
-            FileInputStream fis = null;
-            try{
-                File zipFile = new File(zipToEncode);
 
-                zipFile.createNewFile();
-                fout = new FileOutputStream(zipFile);
-                zout = new ZipOutputStream(fout);
-                ZipEntry zipEntry = new ZipEntry(fileName);
-                fis = new FileInputStream(unzippedPath + "/" + fileName);
-                zout.putNextEntry(zipEntry);
-                for (int c = fis.read(); c != -1; c = fis.read()) {
-                    zout.write(c);
+
+                FileOutputStream fout = null;
+                ZipOutputStream zout = null;
+                FileInputStream fis = null;
+                try{
+                    fout = new FileOutputStream(zipFile);
+                    zout = new ZipOutputStream(fout);
+
+                    for(File f: files) {
+                        ZipEntry zipEntry = new ZipEntry(f.getName());
+                        fis = new FileInputStream(f);
+
+                        zout.putNextEntry(zipEntry);
+                        for (int c = fis.read(); c != -1; c = fis.read()) {
+                            zout.write(c);
+                        }
+                        zout.closeEntry();
+
+                        log.info("File "+f+" zipped to " + zipToEncode + " archive.");
+                    }
+                } finally {
+                    if(fis!=null)
+                        fis.close();
+                    if(zout!=null)
+                        zout.close();
+                    if(fout!=null)
+                        fout.close();
                 }
-                zout.closeEntry();
-                System.out.println("File "+fileName+" zipped to " + zipToEncode + " archive.");
-            } finally {
-                if(fis!=null)
-                    fis.close();
-                if(zout!=null)
-                    zout.close();
-                if(fout!=null)
-                    fout.close();
-            }
         }
     }
 }
