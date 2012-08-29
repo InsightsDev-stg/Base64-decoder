@@ -3,7 +3,10 @@ package ru.atconsulting.tests.base64;
 import net.sourceforge.iharder.java.base64.Base64;
 
 import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Enumeration;
+import java.util.logging.Logger;
 import java.util.zip.*;
 
 /**
@@ -11,6 +14,9 @@ import java.util.zip.*;
  * @author Astafyev Evgeny (astafev)
  */
 public class ConsoleDriver {
+
+    static Logger log = Logger.getLogger(Console.class.getName());
+
     /**файл, в который запишется поток байт после декодирования*/
     private static String decodedZipFile = "decoded.zip";
     /**файл, который будет кодирован затем*/
@@ -27,24 +33,27 @@ public class ConsoleDriver {
     public static void main(String[] args) throws IOException {
         //задаем файлы по введенным опциям, мазафака
         for(int i = 0; i<args.length; i++){
-            switch (args[i]){
-                case "-zipOut": decodedZipFile = args[++i];
-                             break;
-                case "-zipIn": zipToEncode = args[++i];
-                             break;
-                case "-res": outEncodedFile = args[++i];
-                             break;
-                case "-in": inEncodedFile = args[++i];
-                            break;
-                default:
-                    if(!args[i].equals("-h") || !args[i].equals("-help") || !args[i].equals("--h") || !args[i].equals("--help") || !args[i].equals("/?"))
-                        System.out.println("You use it wrong, dump idiot!!\n");
-                    System.out.println("Use the following options: \n    -zipOut  to assign file, in what archive after decoding will be" + decodedZipFile +
-                            "\n    -zipIn   to assign archive to encode. By default: " + zipToEncode +
-                            "\n    -res     to assign file, where will be encoded string. This is the end file that we need. By default: " + outEncodedFile +
-                            "\n    -in      to assign file with String to decode. By default: " + inEncodedFile
-                    );
-                    return;
+            if (args[i].equals("-zipOut")) {
+                decodedZipFile = args[++i];
+
+            } else if (args[i].equals("-zipIn")) {
+                zipToEncode = args[++i];
+
+            } else if (args[i].equals("-res")) {
+                outEncodedFile = args[++i];
+
+            } else if (args[i].equals("-in")) {
+                inEncodedFile = args[++i];
+
+            } else {
+                if (!args[i].equals("-h") || !args[i].equals("-help") || !args[i].equals("--h") || !args[i].equals("--help") || !args[i].equals("/?"))
+                    System.out.println("You use it wrong, dump idiot!!\n");
+                System.out.println("Use the following options: \n    -zipOut  to assign file, in what archive after decoding will be" + decodedZipFile +
+                        "\n    -zipIn   to assign archive to encode. By default: " + zipToEncode +
+                        "\n    -res     to assign file, where will be encoded string. This is the end file that we need. By default: " + outEncodedFile +
+                        "\n    -in      to assign file with String to decode. By default: " + inEncodedFile
+                );
+                return;
             }
         }
 
@@ -76,12 +85,12 @@ public class ConsoleDriver {
                 encode();
             }
 
-            if (command.equals("du") || command.equals("decode and unzip"))  {
+            if (command.equals("du") || command.equals("decode and unzip") || command.equals("1"))  {
                 decode();
                 unzipper.unzip();
             }
 
-            if (command.equals("ze") || command.equals("zip and encode"))  {
+            if (command.equals("ze") || command.equals("zip and encode") || command.equals("2"))  {
                 unzipper.zip();
                 encode();
             }
@@ -99,11 +108,11 @@ public class ConsoleDriver {
 
     private static void decode() throws IOException {
         Base64.decodeFileToFile(inEncodedFile, decodedZipFile);
-        System.out.println("Decoded!");
+        log.info("Decoded!");
     }
     private static void encode() throws IOException {
         Base64.encodeFileToFile(zipToEncode, outEncodedFile);
-        System.out.println("Encoded!");
+        log.info("Encoded!");
 
     }
 
@@ -118,32 +127,58 @@ public class ConsoleDriver {
         }
 
         /**
-         * Разархивирет, положит все в unzippedPath (unzipped по умолчанию)
+         * Разархивирует, положит все в unzippedPath (unzipped по умолчанию)
          * */
         void unzip() throws IOException {
             ZipFile zipFile = new ZipFile(decodedZipFile);
             Enumeration e = zipFile.entries();
-
-            ZipEntry ze = (ZipEntry) e.nextElement();
-            fileName = ze.getName();
-
-            System.out.println("Unzipping " + ze.getName());
             File directory = new File(unzippedPath);
-            directory.mkdir();
-            FileOutputStream fout = new FileOutputStream(unzippedPath+"/"+ze.getName());
-            InputStream in = zipFile.getInputStream(ze);
-            for (int c = in.read(); c != -1; c = in.read()) {
-                fout.write(c);
-            }
-            in.close();
-            fout.close();
 
+            if(directory.exists())
+            {
+                //старые файлы скидываем в папку trash
+                File[] oldFiles = directory.listFiles();
+                File trashDirectory = new File("old_trash");
+                if(!trashDirectory.exists())
+                    trashDirectory.mkdir();
+
+                SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
+                File todaysTrash = new File(trashDirectory, dateFormat.format(new Date()));
+                if(!todaysTrash.exists())
+                    todaysTrash.mkdir();
+
+                for(File f: oldFiles){
+                    //перемещаем в trash
+                    if(!f.renameTo(new File(todaysTrash, f.getName()))){
+                        log.severe("Ow, shit! I couldn't copy " + f.getName());
+                        log.severe("We all will die!!!!");
+                        return;
+                    }
+                }
+            }
+            else directory.mkdir();
+
+            while(e.hasMoreElements()){
+                ZipEntry ze = (ZipEntry) e.nextElement();
+                fileName = ze.getName();
+
+                log.info("Unzipping " + ze.getName());
+                FileOutputStream fout = new FileOutputStream(unzippedPath+"/"+ze.getName());
+                InputStream in = zipFile.getInputStream(ze);
+                for (int c = in.read(); c != -1; c = in.read()) {
+                    fout.write(c);
+                }
+                in.close();
+                fout.close();
+            }
+            log.info("Done!");
         }
 
         void zip() throws IOException {
             if(fileName==null) {
-                System.out.println("You should unzip before!");
-                System.out.println("You can bypass this, by typing -sfn (setFileName).");
+                log.warning("You should unzip before!");
+                log.warning("You can bypass this, by typing -sfn (setFileName).");
+                return;
             }
 
             FileOutputStream fout = null;
@@ -171,14 +206,6 @@ public class ConsoleDriver {
                 if(fout!=null)
                     fout.close();
             }
-
-            /*try {
-                zout = new ZipOutputStream(fout);
-             }
-            finally {
-                if (zout != null)
-                    zout.close();
-            }*/
         }
     }
 }
