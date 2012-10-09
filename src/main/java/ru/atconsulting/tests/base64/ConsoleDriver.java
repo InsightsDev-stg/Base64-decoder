@@ -30,6 +30,19 @@ public class ConsoleDriver {
     /**файл, где лежит исходное сообщение, которое надо будет декодировать*/
     private static String unzippedPath = "unzipped";
 
+    public static String use_manual = "Use the following options: \n    -zipOut  to assign file, in what archive after decoding will be" + decodedZipFile +
+            "\n    -zipIn   to assign archive to encode. By default: " + zipToEncode +
+            "\n    -res     to assign file, where will be encoded string. This is the end file that we need. By default: " + outEncodedFile +
+            "\n    -in      to assign file with String to decode. By default: " + inEncodedFile;
+    public static String help = "You should look to folder \"/"+unzippedPath+"\" for request. Change what you need and then archive them back (use du and ze options)\n" +
+            "\n  q or quit - to exit." +
+            "\n  d or decode - to decode. \""+inEncodedFile+"\" will be decoded to \""+ decodedZipFile +"\"." +
+            "\n  e or encode - to encode. \""+ zipToEncode +"\" will be encoded to \""+outEncodedFile+"\"." +
+            "\n  du - to decode and unzip. \""+inEncodedFile+"\" will be unzipped to \""+ unzippedPath +"\"." +
+            "\n  ze - to zip and encode. All files from \""+unzippedPath+"\" will be zipped and encoded back to \""+ outEncodedFile +"\"." +
+            "\n  Probably you won't use other options. But you can see them by typing a (for advanced or all, what you like more)."
+            +"\n\n";
+
     public static void main(String[] args) throws IOException {
         //задаем файлы по введенным опциям, мазафака
         for(int i = 0; i<args.length; i++){
@@ -48,28 +61,12 @@ public class ConsoleDriver {
             } else {
                 if (!args[i].equals("-h") || !args[i].equals("-help") || !args[i].equals("--h") || !args[i].equals("--help") || !args[i].equals("/?"))
                     System.out.println("You use it wrong, dump idiot!!\n");
-                System.out.println("Use the following options: \n    -zipOut  to assign file, in what archive after decoding will be" + decodedZipFile +
-                        "\n    -zipIn   to assign archive to encode. By default: " + zipToEncode +
-                        "\n    -res     to assign file, where will be encoded string. This is the end file that we need. By default: " + outEncodedFile +
-                        "\n    -in      to assign file with String to decode. By default: " + inEncodedFile
-                );
+                System.out.println(use_manual);
                 return;
             }
         }
 
-        String advancedOptions =
-                "\nTo decode and unzip type dz. "+inEncodedFile+" will be unzipped to \""+ unzippedPath +"\"." +
-                        "\nTo zip and encode type ze. All files from "+unzippedPath+" will be zipped and encoded back to \""+ outEncodedFile +"\"." +
-                        "\nTo decode type decode or d. \""+inEncodedFile+"\" will be decoded to \""+ decodedZipFile +"\"." +
-                "\nTo encode type encode or e. \""+ zipToEncode +"\" will be encoded to \""+outEncodedFile+"\"."+
-                //todo!!
-                "\nTo encode type encode or e. \""+ zipToEncode +"\" will be encoded to \""+outEncodedFile+"\".";
-        System.out.println("You should look to folder \"/"+unzippedPath+"\" for request. Change what you need and then archive them back (use du and ez options)" +
-                "\n  To exit type quit or q." +
-                "\n  To decode and unzip type du. "+inEncodedFile+" will be unzipped to \""+ unzippedPath +"\"." +
-                "\n  To zip and encode type ze. All files from "+unzippedPath+" will be zipped and encoded back to \""+ outEncodedFile +"\"." +
-                "\n  Probably you won't use other options. But you can see them by typing a (for advanced or all, what you like more)."
-                +"\n\n");
+        System.out.println(help);
         Console con = System.console();
         Unzipper unzipper = new Unzipper();
         while(true){
@@ -78,28 +75,38 @@ public class ConsoleDriver {
                 System.out.println("Goodbye! Come again.");
                 return;
             }
+            else
             if (command.equals("d") || command.equals("decode")){
                 decode();
             }
+            else
             if (command.equals("e") || command.equals("encode"))  {
                 encode();
             }
-
+            else
             if (command.equals("du") || command.equals("decode and unzip") || command.equals("1"))  {
                 decode();
                 unzipper.unzip();
             }
-
+            else
             if (command.equals("ze") || command.equals("zip and encode") || command.equals("2"))  {
                 unzipper.zip();
                 encode();
             }
+            else
             if (command.equals("a") || command.equals("advanced") || command.equals("all") || command.equals("h") || command.equals("help"))  {
-                System.out.println(advancedOptions);
+                System.out.println("I lied, there's no any advanced options.");
+                System.out.println(help);
             }
+            else
             if (command.equals("-sfn") || command.equals("setFileName"))  {
                 System.out.print("Type filename here: ");
                 unzipper.setFileName(con.readLine());
+            }
+            else
+            {
+                System.out.println("You use it wrong, dump idiot!");
+                System.out.println();
             }
 
 
@@ -176,6 +183,7 @@ public class ConsoleDriver {
         }
 
         void zip() throws IOException {
+
             File[] files = new File(unzippedPath).listFiles();
             File zipFile = new File(zipToEncode);
             if(zipFile.exists())
@@ -201,10 +209,13 @@ public class ConsoleDriver {
                             zout.write(c);
                         }
                         zout.closeEntry();
-
                         log.info("File "+f+" zipped to " + zipToEncode + " archive.");
                     }
-                } finally {
+                }
+                catch (ZipException e) {
+                    log.info("It is not archive!! " + e.getMessage());
+                }
+                finally {
                     if(fis!=null)
                         fis.close();
                     if(zout!=null)
