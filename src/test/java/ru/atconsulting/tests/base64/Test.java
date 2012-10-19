@@ -1,12 +1,9 @@
 package ru.atconsulting.tests.base64;
 
-import net.sourceforge.iharder.java.base64.Base64;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
 
+import java.io.Console;
+import java.util.logging.*;
 import static ru.atconsulting.tests.base64.ConsoleDriver.*;
 
 /**
@@ -18,9 +15,7 @@ import static ru.atconsulting.tests.base64.ConsoleDriver.*;
 public class Test {
     public static void main (String[]args) throws Exception{
 
-        ConsoleDriver.Unzipper unzipper = new ConsoleDriver.Unzipper();
-        unzipper.unzip();
-        unzipper.zip();
+        log.info("fuck you");
         /*File file = new File("test.txt");
         File outFile = new File("outtest.txt");
 

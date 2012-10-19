@@ -6,7 +6,7 @@ import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
-import java.util.logging.Logger;
+import java.util.logging.*;
 import java.util.zip.*;
 
 /**
@@ -16,7 +16,18 @@ import java.util.zip.*;
 public class ConsoleDriver {
 
     static Logger log = Logger.getLogger(Console.class.getName());
-
+    static {
+        log.setUseParentHandlers(false);
+        Formatter formatter = new SimpleFormatter() {
+            @Override
+            public String format(LogRecord record) {
+                return record.getLevel().getName() + ": " + record.getMessage();
+            }
+        };
+        Handler handler = new ConsoleHandler();
+        handler.setFormatter(formatter);
+        log.addHandler(handler);
+    }
     /**файл, в который запишется поток байт после декодирования*/
     private static String decodedZipFile = "decoded.zip";
     /**файл, который будет кодирован затем*/
@@ -34,6 +45,7 @@ public class ConsoleDriver {
             "\n    -zipIn   to assign archive to encode. By default: " + zipToEncode +
             "\n    -res     to assign file, where will be encoded string. This is the end file that we need. By default: " + outEncodedFile +
             "\n    -in      to assign file with String to decode. By default: " + inEncodedFile;
+
     public static String help = "You should look to folder \"/"+unzippedPath+"\" for request. Change what you need and then archive them back (use du and ze options)\n" +
             "\n  q or quit - to exit." +
             "\n  d or decode - to decode. \""+inEncodedFile+"\" will be decoded to \""+ decodedZipFile +"\"." +
@@ -65,6 +77,19 @@ public class ConsoleDriver {
                 return;
             }
         }
+
+        //TODO закончить логгер
+        Handler handler = new ConsoleHandler();
+        Formatter formatter = new SimpleFormatter() {
+            @Override
+            public String format(LogRecord record) {
+
+                return record.getMessage();
+            }
+        };
+        Handler[] handlers = log.getHandlers();
+        System.out.println(handlers.length);
+        handlers[0].setFormatter(formatter);
 
         System.out.println(help);
         Console con = System.console();
@@ -99,11 +124,6 @@ public class ConsoleDriver {
                 System.out.println(help);
             }
             else
-            if (command.equals("-sfn") || command.equals("setFileName"))  {
-                System.out.print("Type filename here: ");
-                unzipper.setFileName(con.readLine());
-            }
-            else
             {
                 System.out.println("You use it wrong, dump idiot!");
                 System.out.println();
@@ -123,15 +143,7 @@ public class ConsoleDriver {
 
     }
 
-
-
     static class Unzipper{
-
-        private String fileName;
-
-        void setFileName(String fileName) {
-            this.fileName = fileName;
-        }
 
         /**
          * Разархивирует, положит все в unzippedPath (unzipped по умолчанию)
