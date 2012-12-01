@@ -50,6 +50,8 @@ public class ConsoleDriver {
             "\n  q or quit - to exit." +
             "\n  d or decode - to decode. \""+inEncodedFile+"\" will be decoded to \""+ decodedZipFile +"\"." +
             "\n  e or encode - to encode. \""+ zipToEncode +"\" will be encoded to \""+outEncodedFile+"\"." +
+            "\n  z or zip - to zip. \""+ unzippedPath +"\" will be zipped to \""+zipToEncode+"\"." +
+            "\n  u or zip - to unzip. \""+ zipToEncode +"\" will be encoded to \""+outEncodedFile+"\"." +
             "\n  du - to decode and unzip. \""+inEncodedFile+"\" will be unzipped to \""+ unzippedPath +"\"." +
             "\n  ze - to zip and encode. All files from \""+unzippedPath+"\" will be zipped and encoded back to \""+ outEncodedFile +"\"." +
             "\n  Probably you won't use other options. But you can see them by typing a (for advanced or all, what you like more)."
@@ -59,15 +61,38 @@ public class ConsoleDriver {
         //задаем файлы по введенным опциям, мазафака
         for(int i = 0; i<args.length; i++){
             if (args[i].equals("-zipOut")) {
+                if(args.length == i+1){
+                    System.out.println("You use it wrong, dump idiot!!\n");
+                    System.out.println(use_manual);
+                    return;
+                }
                 decodedZipFile = args[++i];
 
             } else if (args[i].equals("-zipIn")) {
+                if(args.length == i+1){
+                    System.out.println("You use it wrong, dump idiot!!\n");
+                    System.out.println(use_manual);
+                    return;
+                }
+
                 zipToEncode = args[++i];
 
             } else if (args[i].equals("-res")) {
+                if(args.length == i+1){
+                    System.out.println("You use it wrong, dump idiot!!\n");
+                    System.out.println(use_manual);
+                    return;
+                }
+
                 outEncodedFile = args[++i];
 
             } else if (args[i].equals("-in")) {
+                if(args.length == i+1){
+                    System.out.println("You use it wrong, dump idiot!!\n");
+                    System.out.println(use_manual);
+                    return;
+                }
+
                 inEncodedFile = args[++i];
 
             } else {
@@ -84,12 +109,12 @@ public class ConsoleDriver {
             @Override
             public String format(LogRecord record) {
 
-                return record.getMessage();
+                return record.getLevel() + ": " + record.getMessage() + '\n';
             }
         };
-        Handler[] handlers = log.getHandlers();
-        System.out.println(handlers.length);
-        handlers[0].setFormatter(formatter);
+        log.getHandlers()[0].setFormatter(formatter);
+//        log.addHandler(handler);
+//        handler.setFormatter(formatter);
 
         System.out.println(help);
         Console con = System.console();
@@ -119,25 +144,31 @@ public class ConsoleDriver {
                 encode();
             }
             else
+            if (command.equals("u") || command.equals("unzip")) {
+                unzipper.unzip();
+            }
+            else
+            if (command.equals("z") || command.equals("zip") )  {
+                unzipper.zip();
+            }
+            else
             if (command.equals("a") || command.equals("advanced") || command.equals("all") || command.equals("h") || command.equals("help"))  {
-                System.out.println("I lied, there's no any advanced options.");
-                System.out.println(help);
+                System.out.println("I lied, there's no any advanced options.\n" + help);
             }
             else
             {
                 System.out.println("You use it wrong, dump idiot!");
-                System.out.println();
             }
 
 
         }
     }
 
-    private static void decode() throws IOException {
+    static void decode() throws IOException {
         Base64.decodeFileToFile(inEncodedFile, decodedZipFile);
         log.info("Decoded!");
     }
-    private static void encode() throws IOException {
+    static void encode() throws IOException {
         Base64.encodeFileToFile(zipToEncode, outEncodedFile);
         log.info("Encoded!");
 
@@ -148,8 +179,14 @@ public class ConsoleDriver {
         /**
          * Разархивирует, положит все в unzippedPath (unzipped по умолчанию)
          * */
-        void unzip() throws IOException {
-            ZipFile zipFile = new ZipFile(decodedZipFile);
+        static void unzip() throws IOException {
+            ZipFile zipFile = null;
+            try {
+                zipFile = new ZipFile(decodedZipFile);
+            } catch (ZipException e) {
+                log.warning("Not an archive. " + e.getMessage());
+                return;
+            }
             Enumeration e = zipFile.entries();
             File directory = new File(unzippedPath);
 
@@ -178,23 +215,31 @@ public class ConsoleDriver {
                 }
             }
             else directory.mkdir();
+            try{
+                while(e.hasMoreElements()){
+                    ZipEntry ze = (ZipEntry) e.nextElement();
 
-            while(e.hasMoreElements()){
-                ZipEntry ze = (ZipEntry) e.nextElement();
-
-                log.info("Unzipping " + ze.getName());
-                FileOutputStream fout = new FileOutputStream(unzippedPath+"/"+ze.getName());
-                InputStream in = zipFile.getInputStream(ze);
-                for (int c = in.read(); c != -1; c = in.read()) {
-                    fout.write(c);
+                    log.info("Unzipping " + ze.getName());
+                    FileOutputStream fout = new FileOutputStream(unzippedPath+"/"+ze.getName());
+                    InputStream in = zipFile.getInputStream(ze);
+                    for (int c = in.read(); c != -1; c = in.read()) {
+                        fout.write(c);
+                    }
+                    in.close();
+                    fout.close();
                 }
-                in.close();
-                fout.close();
+                log.info("Done!");
             }
-            log.info("Done!");
+            catch (ZipException e1) {
+                log.warning("Not an archive!");
+                log.warning(e1.getMessage());
+            }
+            catch (RuntimeException e2) {
+                log.warning("Someting wrong! Unable to unzip! "+e2.getMessage());
+            }
         }
 
-        void zip() throws IOException {
+        static void zip() throws IOException {
 
             File[] files = new File(unzippedPath).listFiles();
             File zipFile = new File(zipToEncode);
