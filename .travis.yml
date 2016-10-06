@@ -5,39 +5,21 @@ addons:
     - libs.zip
     - build.zip
     - testbuild.zip
-    target_paths: 351151ba-73cb-49f8-8180-bad4944b5742
-after_failure:
-- cd $DFB_PROJECT_DIR
-- artifacts upload --key $AWS_ACCESS_KEY_ID --secret $AWS_SECRET_ACCESS_KEY --bucket
-  $DFB_AWS_BUCKET --target-paths $DFB_AWS_BUILD_PATH $(find . -name '*.log')
+    target_paths: bc08024e-06ab-4686-bf81-8fa5119f02a2
 after_success:
-- cd $DFB_PROJECT_DIR
-- export JAVA_TOOL_OPTIONS=-javaagent:$DFB_PROJECT_DIR/jacoco-agent-jdk8.jar=destfile=$DFB_PROJECT_DIR/jacoco.exec
-- travis_wait 60 mvn test -Djacoco.skip=true -Dcobertura.skip=true -Dmaven.clover.skip=true
-  -Dmaven.javadoc.skip=true -B -Drat.skip=true -Drat.ignoreErrors=true test-compile
-- cd $DFB_PROJECT_DIR
 - ./df-build.sh
-- cd ${DFB_PROJECT_DIR}
-- env > env.file
-- echo " ----- Debug info for jacoco and env data -----"
-- 'echo "Current dir is: $PWD"'
-- 'echo "Env.file: "'
-- find . -name 'env.file'
-- 'echo "Jacoco cov: "'
-- find . -name '*.exec'
-- echo " ----------------------------------------------"
-- artifacts upload --key $AWS_ACCESS_KEY_ID --secret $AWS_SECRET_ACCESS_KEY --bucket
-  $DFB_AWS_BUCKET --target-paths $DFB_AWS_BUILD_PATH $(git ls-files -oi -x *.exec)
-- artifacts upload --key $AWS_ACCESS_KEY_ID --secret $AWS_SECRET_ACCESS_KEY --bucket
-  $DFB_AWS_BUCKET --target-paths $DFB_AWS_BUILD_PATH ${DFB_PROJECT_DIR}/env.file
 before_install:
 - wget -O beforebuild.sh $DFB_AGENTS_URL/beforebuild.sh
 - chmod a+x beforebuild.sh
 - ./beforebuild.sh
 - curl -sL https://raw.githubusercontent.com/travis-ci/artifacts/master/install |
   bash
+- sed -i.bak -e 's|https://nexus.codehaus.org/snapshots/|https://oss.sonatype.org/content/repositories/codehaus-snapshots/|g'
+  $HOME/.m2/settings.xml
+branches: ''
 cache:
   directories:
+  - $HOME/.m2
   - $HOME/.m2
 env:
   global:
@@ -60,14 +42,14 @@ jdk:
 language: java
 notifications:
   webhooks:
-    on_failure: never
-    on_start: never
+    on_failure: always
+    on_start: always
     on_success: always
     urls:
-    - http://df-sdk-feed-dev.us-east-1.elasticbeanstalk.com/webhooks/travis?build_id=351151ba-73cb-49f8-8180-bad4944b5742&scm_username=astafev
+    - http://insights-portal-insights-service-webserver-stg.public-swarm.devfactory.com/travisWebHookListener?build_id=bc08024e-06ab-4686-bf81-8fa5119f02a2
 script:
 - export JAVA_TOOL_OPTIONS=$DFB_JTO
 - travis_wait 30 mvn -DskipTests=true -Dmaven.javadoc.skip=true -B -Drat.skip=true
   -Drat.ignoreErrors=true test-compile
 sudo: 'false'
-# Modified by Insights Service at 2016-06-16 14:16:29.795181
+# Modified by Insights Service at 2016-10-06 07:35:09.274202
